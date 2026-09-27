@@ -14,6 +14,8 @@ This is a fork of [apasarkar/jnormcorre](https://github.com/apasarkar/jnormcorre
   OpenCV and `future` are no longer needed. `scipy` and `matplotlib`, used only by
   `jnormcorre.simulation`, are in the `simulation` extra.
 - Be tested on Linux and Windows. On Windows JAX runs on the CPU only.
+- Let `MotionCorrect` set how many frames it registers at a time (`batching`), e.g. to fit
+  large frames in GPU memory, and use `frames_per_split` for piecewise-rigid passes too.
 
 To install it with its test dependencies: `pip install -e ".[test]"`.
 

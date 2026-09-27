@@ -310,6 +310,7 @@ class MotionCorrect(object):
         min_mov: float = None,
         upsample_factor_grid: int = 4,
         bigtiff: bool = False,
+        batching: Optional[int] = None,
     ) -> None:
         """
         Constructor class for motion correction operations
@@ -328,6 +329,8 @@ class MotionCorrect(object):
             niter_els: Number of iterations of piecewise rigid registration
             min_mov (float). The minimum value of the movie, if known
             bigtiff (bool): Indicates whether or not movie is saved as a bigtiff or regular tiff
+            batching (int): How many frames to register at a time, e.g. to fit in GPU memory. By
+                default, a number chosen from the frame size (see load_split_heuristic).
         """
         if not isinstance(niter_els, int) or niter_els < 1:
             raise ValueError(f"please provide niter_els as an int of 1 or higher.")
@@ -349,6 +352,7 @@ class MotionCorrect(object):
         self.min_mov = min_mov
         self.pw_rigid = bool(pw_rigid)
         self.bigtiff = bigtiff
+        self.batching = batching
         self.file_FOV_dims = self.lazy_dataset.shape[1], self.lazy_dataset.shape[2]
         self.file_num_frames = self.lazy_dataset.shape[0]
 
@@ -441,6 +445,7 @@ class MotionCorrect(object):
             save_movie_rigid=save_movie,
             add_to_movie=-self.min_mov,
             bigtiff=self.bigtiff,
+            batching=self.batching,
         )
         if template is None:
             self.total_template_rig = _total_template_rig
@@ -496,6 +501,7 @@ class MotionCorrect(object):
             template=self.total_template_els,
             save_movie=save_movie,
             bigtiff=self.bigtiff,
+            batching=self.batching,
         )
 
         if np.isnan(np.sum(new_template_els)):
@@ -523,6 +529,7 @@ def _motion_correct_batch_rigid(
     save_movie_rigid: bool = False,
     add_to_movie: float = None,
     bigtiff: bool = False,
+    batching: Optional[int] = None,
 ) -> tuple[str, np.ndarray, list, list]:
     """
     Performs 1 pass of rigid motion correction; see the following functions for parameter details:
@@ -582,6 +589,7 @@ def _motion_correct_batch_rigid(
             save_movie=save_flag,
             num_splits=num_splits_to_process,
             bigtiff=bigtiff,
+            batching=batching,
         )
 
         new_templ = np.nanmedian(np.dstack([r[-1] for r in res_rig]), -1)
@@ -614,6 +622,7 @@ def _motion_correct_batch_pwrigid(
     template: Optional[np.ndarray] = None,
     save_movie: bool = False,
     bigtiff=False,
+    batching: Optional[int] = None,
 ) -> tuple[str, np.ndarray, list, list, list, list, list]:
     """
     Performs 1 pass of piecewise rigid motion correction; see the following functions for parameter details:
@@ -667,6 +676,7 @@ def _motion_correct_batch_pwrigid(
             save_movie=save_flag,
             num_splits=num_splits_to_process,
             bigtiff=bigtiff,
+            batching=batching,
         )
 
         new_templ = np.nanmedian(np.dstack([r[-1] for r in res_el]), -1)
@@ -710,6 +720,7 @@ def _execute_motion_correction_iteration(
     save_movie: bool = True,
     num_splits: Optional[int] = None,
     bigtiff: bool = False,
+    batching: Optional[int] = None,
 ) -> tuple[str, list[tuple]]:
     """
     Executes a single iteration of motion correction. See the following functions for details:
@@ -759,7 +770,10 @@ def _execute_motion_correction_iteration(
             ]
         )
 
-    split_constant = load_split_heuristic(dims[0], dims[1], T)
+    if batching is None:
+        split_constant = load_split_heuristic(dims[0], dims[1], T)
+    else:
+        split_constant = min(T, batching)
     res = _tile_and_correct_dataloader(
         pars, lazy_dataset, split_constant=split_constant, bigtiff=bigtiff
     )
