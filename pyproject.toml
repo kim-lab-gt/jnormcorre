@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jnormcorre"
+version = "1.0.0"
+description = "Jax-accelerated implementation of normcorre"
+readme = "README.md"
+license = { file = "License.txt" }
+requires-python = ">=3.11"
+classifiers = ["Programming Language :: Python :: 3"]
+dependencies = [
+    "h5py",
+    "jax",
+    "numpy",
+    "tifffile",
+    "tqdm",
+]
+
+[project.optional-dependencies]
+# For jnormcorre.simulation, which generates synthetic movies for testing.
+simulation = ["matplotlib", "scipy"]
+test = ["jnormcorre[simulation]", "pytest", "pytest-xdist"]
+
+[tool.setuptools.packages.find]
+include = ["jnormcorre*"]
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+# Fail on deprecations in this package's own calls (e.g. to JAX), before they become removals.
+filterwarnings = ["error::DeprecationWarning:jnormcorre"]
