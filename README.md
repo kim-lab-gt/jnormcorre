@@ -5,6 +5,18 @@ as fast as possible on GPUs/TPUs (also works well on CPUs).
 
 See the following [documentation](https://jnormcorre.readthedocs.io/en/latest/) for algorithm/parameter details, common use cases, and API info.
 
+## About this fork
+
+This is a fork of [apasarkar/jnormcorre](https://github.com/apasarkar/jnormcorre), changed to:
+
+- Run with current versions of JAX (`jax.numpy.fix` was removed in JAX 0.10) and tifffile.
+- Install only what motion correction uses: `numpy`, `jax`, `h5py`, `tifffile` and `tqdm`. PyTorch,
+  OpenCV and `future` are no longer needed. `scipy` and `matplotlib`, used only by
+  `jnormcorre.simulation`, are in the `simulation` extra.
+- Be tested on Linux and Windows. On Windows JAX runs on the CPU only.
+
+To install it with its test dependencies: `pip install -e ".[test]"`.
+
 ## Citations
 
 If you use this method, please cite the accompanying [paper](https://www.biorxiv.org/content/10.1101/2023.09.14.557777v1)

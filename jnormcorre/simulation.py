@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.ndimage import affine_transform
-from tifffile import imsave
+from tifffile import imwrite as imsave
 from pathlib import Path
 import matplotlib.pyplot as plt
 from tqdm import tqdm

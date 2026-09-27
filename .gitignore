@@ -1,0 +1,7 @@
+__pycache__/
+*.egg-info/
+build/
+.pytest_cache/
+# Corrected movies that MotionCorrect(...).motion_correct(save_movie=True) writes to the working
+# directory, e.g. when running the tests.
+data_*.tiff

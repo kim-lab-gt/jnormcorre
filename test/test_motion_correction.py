@@ -302,3 +302,37 @@ class Test_mc:
         registered_data = registration_arr[:num_frames, :, :]
         #Verify that the registration object gives you the same results as the
         np.allclose(saved_dataset[:num_frames, :, :], registered_data), f"calculated shifts are to different from True value"
+
+
+class Test_known_shifts:
+    """Motion correction recovers the shifts of a movie made by shifting one image."""
+
+    def make_movie(self):
+        from scipy.ndimage import gaussian_filter
+
+        rng = np.random.default_rng(0)
+        image = gaussian_filter(rng.random((96, 80)), 2) * 100
+        shifts = rng.integers(-5, 6, size=(60, 2))
+        movie = np.stack([np.roll(image, tuple(s), axis=(0, 1)) for s in shifts])
+        movie += rng.normal(0, 0.1, movie.shape)
+        return movie.astype(np.float32), shifts
+
+    @pytest.mark.parametrize("pw_rigid", [False, True])
+    def test_recovers_rigid_shifts(self, pw_rigid):
+        movie, shifts = self.make_movie()
+        mc = MotionCorrect(movie, max_shifts=(8, 8), niter_rig=2, pw_rigid=pw_rigid,
+                           strides=(32, 32), overlaps=(16, 16), niter_els=1)
+        corrector, _ = mc.motion_correct()
+
+        # The estimated shifts undo the movie's shifts, up to the template's own offset.
+        error = np.asarray(mc.shifts_rig) + shifts
+        error -= np.median(error, axis=0)
+        assert np.abs(error).max() < 0.5
+
+        # Corrected frames match the first; before correction, most don't.
+        def correlations_with_first_frame(m):
+            return np.corrcoef(m[:, 10:-10, 10:-10].reshape(len(m), -1))[0]
+
+        assert np.median(correlations_with_first_frame(movie)) < 0.5
+        corrected = np.asarray(corrector.register_frames(movie, pw_rigid=pw_rigid))
+        assert correlations_with_first_frame(corrected).min() > 0.95
