@@ -1228,7 +1228,7 @@ def register_translation_jax_simple(
 
     maxima = jnp.unravel_index(jnp.argmax(new_cross_corr), cross_correlation.shape)
 
-    midpoints = jnp.array([jnp.fix(shape[0] / 2), jnp.fix(shape[1] / 2)])
+    midpoints = jnp.array([jnp.trunc(shape[0] / 2), jnp.trunc(shape[1] / 2)])
 
     shifts = jnp.array(maxima, dtype=jnp.float32)
 
@@ -1249,7 +1249,7 @@ def register_translation_jax_simple(
     shifts = jnp.round(shifts * upsample_factor) / upsample_factor
     upsampled_region_size = int(upsample_factor * 1.5 + 0.5)
     # Center of output array at dftshift + 1
-    dftshift = jnp.fix(upsampled_region_size / 2.0)
+    dftshift = jnp.trunc(upsampled_region_size / 2.0)
     upsample_factor = jnp.array(upsample_factor, dtype=jnp.float32)
     normalization = src_freq.size * upsample_factor**2
     # Matrix multiply DFT around the current shift estimate
@@ -1465,7 +1465,7 @@ def register_translation_jax_full(
 
     maxima = jnp.unravel_index(jnp.argmax(new_cross_corr), cross_correlation.shape)
 
-    midpoints = jnp.array([jnp.fix(shape[0] / 2), jnp.fix(shape[1] / 2)])
+    midpoints = jnp.array([jnp.trunc(shape[0] / 2), jnp.trunc(shape[1] / 2)])
 
     shifts = jnp.array(maxima, dtype=jnp.float32)
 
@@ -1486,7 +1486,7 @@ def register_translation_jax_full(
     shifts = jnp.round(shifts * upsample_factor) / upsample_factor
     upsampled_region_size = int(upsample_factor * 1.5 + 0.5)
     # Center of output array at dftshift + 1
-    dftshift = jnp.fix(upsampled_region_size / 2.0)
+    dftshift = jnp.trunc(upsampled_region_size / 2.0)
     upsample_factor = jnp.array(upsample_factor, dtype=jnp.float32)
     normalization = src_freq.size * upsample_factor**2
     # Matrix multiply DFT around the current shift estimate
@@ -1559,7 +1559,7 @@ def ceil_max(a, b):
 # @partial(jit)
 def floor_min(a, b):
     interm = jax.lax.cond(a > b, second_value, first_value, a, b)
-    return jnp.fix(interm)
+    return jnp.trunc(interm)
 
 
 # @partial(jit)
