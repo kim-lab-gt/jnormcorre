@@ -488,6 +488,7 @@ class MotionCorrect(object):
             self.strides,
             self.overlaps,
             -self.min_mov,
+            frames_per_split=self.frames_per_split,
             upsample_factor_grid=self.upsample_factor_grid,
             max_deviation_rigid=self.max_deviation_rigid,
             num_splits_to_process=self.num_splits_to_process_els,
