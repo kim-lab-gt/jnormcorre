@@ -7,8 +7,14 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 from jax import jit, vmap
-import cv2
 from typing import *
+
+
+def _gaussian_kernel_1d(size: int, sigma: float) -> np.ndarray:
+    """Normalized 1D Gaussian kernel as a (size, 1) column, like OpenCV's getGaussianKernel."""
+    x = np.arange(size) - (size - 1) / 2
+    kernel = np.exp(-(x**2) / (2 * sigma**2))
+    return (kernel / kernel.sum())[:, np.newaxis]
 
 
 def compute_highpass_filter_kernel(gaussian_sigma: list[int]):
@@ -20,7 +26,7 @@ def compute_highpass_filter_kernel(gaussian_sigma: list[int]):
     if gaussian_sigma[0] < 1:
         raise ValueError("gSig_filt is a list which must contain a positive integer")
     ksize = tuple([(3 * i) // 2 * 2 + 1 for i in gaussian_sigma])
-    ker = cv2.getGaussianKernel(ksize[0], gaussian_sigma[0])
+    ker = _gaussian_kernel_1d(ksize[0], gaussian_sigma[0])
     ker2D = ker.dot(ker.T)
     nz = np.nonzero(ker2D >= ker2D[:, 0].max())
     zz = np.nonzero(ker2D < ker2D[:, 0].max())

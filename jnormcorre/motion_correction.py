@@ -6,8 +6,6 @@ import datetime
 from builtins import range
 from builtins import str
 import jax
-import torch
-from past.utils import old_div
 from typing import *
 from jax.typing import ArrayLike
 from jnormcorre.utils.lazy_array import lazy_data_loader
@@ -774,22 +772,14 @@ def _tile_and_correct_dataloader(
     See _execute_motion_correction_iteration for details on what parameters this function uses to perform registration.
     If specified, writes corrected frames to a tiff memmap file (name given by out_fname)
     """
-    num_workers = 0
     movie_shape = lazy_dataset.shape
     tile_and_correct_dataobj = tile_and_correct_dataset(param_list)
-    loader_obj = torch.utils.data.DataLoader(
-        tile_and_correct_dataobj,
-        batch_size=1,
-        shuffle=False,
-        num_workers=num_workers,
-        collate_fn=regular_collate,
-        timeout=0,
-    )
 
     results_list = []
     start_pt_save = 0
     memmap_placeholder = None
-    for dataloader_index, data in enumerate(tqdm(loader_obj), 0):
+    for dataloader_index in tqdm(range(len(tile_and_correct_dataobj))):
+        data = tile_and_correct_dataobj[dataloader_index]
         num_iters = math.ceil(data[0].shape[0] / split_constant)
         (
             imgs_net,
@@ -923,10 +913,6 @@ def nan_processing(arr: ArrayLike) -> ArrayLike:
     return r
 
 
-def regular_collate(batch):
-    return batch[0]
-
-
 def calculate_splits(T: int, frames_per_split: int) -> list:
     """
     Function used to build a computation work plan for motion correction (decide which frames to run per split, etc.)
@@ -977,7 +963,7 @@ def bin_median(mat: np.ndarray, window: int = 10, exclude_nans: bool = True):
     T, d1, d2 = np.shape(mat)
     if T < window:
         window = T
-    num_windows = int(old_div(T, window))
+    num_windows = T // window
     num_frames = num_windows * window
     if exclude_nans:
         img = np.nanmedian(
