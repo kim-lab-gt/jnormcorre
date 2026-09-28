@@ -336,3 +336,15 @@ class Test_known_shifts:
         assert np.median(correlations_with_first_frame(movie)) < 0.5
         corrected = np.asarray(corrector.register_frames(movie, pw_rigid=pw_rigid))
         assert correlations_with_first_frame(corrected).min() > 0.95
+
+
+@pytest.mark.parametrize("pw_rigid", [False, True])
+def test_frames_per_split(pw_rigid):
+    """Both the rigid and piecewise-rigid passes register the frames in splits of this size."""
+    movie = np.random.default_rng(0).random((250, 64, 64)).astype(np.float32)
+    mc = MotionCorrect(movie, max_shifts=(5, 5), frames_per_split=100, pw_rigid=pw_rigid,
+                       strides=(24, 24), overlaps=(8, 8))
+    mc.motion_correct()
+    assert len(mc.templates_rig) == 3  # one template per split: frames 0-99, 100-199, 150-249
+    if pw_rigid:
+        assert len(mc.templates_els) == 3
