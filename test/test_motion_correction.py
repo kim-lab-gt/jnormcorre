@@ -348,3 +348,34 @@ def test_frames_per_split(pw_rigid):
     assert len(mc.templates_rig) == 3  # one template per split: frames 0-99, 100-199, 150-249
     if pw_rigid:
         assert len(mc.templates_els) == 3
+
+
+@pytest.mark.parametrize("pw_rigid", [False, True])
+def test_batching(monkeypatch, pw_rigid):
+    """batching sets how many frames are registered at a time, without changing the results."""
+    rng = np.random.default_rng(0)
+    movie = np.stack([np.roll(rng.random((64, 64)), shift, axis=0) for shift in range(-3, 3)] * 5)
+    movie = movie.astype(np.float32)
+
+    def run(batching):
+        name = "register_frames_to_template_pwrigid" if pw_rigid else "register_frames_to_template_rigid"
+        original = getattr(jnormcorre.motion_correction, name)
+        sizes = []
+
+        def recording(imgs, *args):
+            sizes.append(imgs.shape[0])
+            return original(imgs, *args)
+
+        with monkeypatch.context() as m:
+            m.setattr(jnormcorre.motion_correction, name, recording)
+            mc = MotionCorrect(movie, max_shifts=(5, 5), frames_per_split=20, pw_rigid=pw_rigid,
+                               strides=(24, 24), overlaps=(8, 8), batching=batching)
+            mc.motion_correct()
+        template = mc.total_template_els if pw_rigid else mc.total_template_rig
+        return sizes, np.asarray(template)
+
+    default_sizes, default_template = run(None)
+    sizes, template = run(7)
+    assert set(default_sizes) == {20}  # the default here: a whole split (frames 0-19, 10-29)
+    assert max(sizes) == 7 and sum(sizes) == sum(default_sizes)
+    np.testing.assert_allclose(template, default_template, rtol=1e-5, atol=1e-5)
