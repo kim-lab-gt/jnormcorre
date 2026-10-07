@@ -852,6 +852,9 @@ def _tile_and_correct_dataloader(
         new_temp = generate_template_chunk(mc)
 
         results_list.append((shift_info, idxs, new_temp))
+        # Free this split's frames and their registered copy before the next split is loaded;
+        # otherwise both splits are held at once (each 7.5 GB for 500 frames of 2008 x 2008).
+        del data, imgs_net, mc, imgs, outs
 
     return results_list
 
